@@ -1,15 +1,15 @@
 {
-	"name": "@oazmi/superbuild-plugin-html",
+	"name": "@oazmi/superbuild-plugins",
 	"version": "0.1.0",
-	"description": "An html-bundling plugin for superbuild (which is a wrapper over esbuild) for building static sites with full code-splitting and code-sharing support.",
+	"description": "A suite of plugins for superbuild (which is a wrapper over esbuild) for static site generation with full code-splitting and code-sharing support.",
 	"author": "Omar Azmi",
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/oazmi/superbuild-plugin-html.git"
+		"url": "git+https://github.com/oazmi/superbuild-plugins.git"
 	},
 	"bugs": {
-		"url": "https://github.com/oazmi/superbuild-plugin-html/issues"
+		"url": "https://github.com/oazmi/superbuild-plugins/issues"
 	},
 	"exclude": [
 		"./dist/",
@@ -22,10 +22,12 @@
 		"./typedefs": "./src/typedefs.ts"
 	},
 	"imports": {
-		"@oazmi/superbuild": "jsr:@oazmi/superbuild@0.1.0",
-		"@oazmi/kitchensink": "jsr:@oazmi/kitchensink@0.10.0",
-		"@oazmi/esbuild-types": "jsr:@oazmi/esbuild-types@0.28.0"
+		"@oazmi/superbuild": "jsr:@oazmi/superbuild@0.1.1",
+		"@oazmi/kitchensink": "jsr:@oazmi/kitchensink@0.10.1",
+		"@oazmi/esbuild-types": "jsr:@oazmi/esbuild-types@0.28.0",
+		"ultrahtml": "npm:ultrahtml@^1.7.0"
 	},
+	"minimumDependencyAge": "0",
 	"nodeModulesDir": "none",
 	"publish": {
 		"exclude": [
@@ -52,9 +54,10 @@
 	},
 	"packageJson": {
 		"dependencies": {
-			"@oazmi/superbuild": "@0.1.0",
-			"@oazmi/kitchensink": "0.10.0",
-			"@oazmi/esbuild-types": "0.28.0"
+			"@oazmi/superbuild": "0.1.1",
+			"@oazmi/kitchensink": "0.10.1",
+			"@oazmi/esbuild-types": "0.28.0",
+			"ultrahtml": "^1.7.0"
 		},
 		"devDependencies": {
 			"typescript": "^5.6.0",
@@ -74,10 +77,10 @@
 		],
 		"scripts": {
 			"build-dist": "npm run build-esm && npm run build-esm-minify && npm run build-iife && npm run build-iife-minify",
-			"build-esm": "npx esbuild \"./src/mod.ts\" --bundle --format=esm --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugin-html.esm.js\"",
-			"build-esm-minify": "npx esbuild \"./src/mod.ts\" --bundle --minify --format=esm --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugin-html.esm.min.js\"",
-			"build-iife": "npx esbuild \"./src/mod.ts\" --bundle --format=iife --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugin-html.iife.js\"",
-			"build-iife-minify": "npx esbuild \"./src/mod.ts\" --bundle --minify --format=iife --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugin-html.iife.min.js\""
+			"build-esm": "npx esbuild \"./src/mod.ts\" --bundle --format=esm --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugins.esm.js\"",
+			"build-esm-minify": "npx esbuild \"./src/mod.ts\" --bundle --minify --format=esm --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugins.esm.min.js\"",
+			"build-iife": "npx esbuild \"./src/mod.ts\" --bundle --format=iife --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugins.iife.js\"",
+			"build-iife-minify": "npx esbuild \"./src/mod.ts\" --bundle --minify --format=iife --external:node:fs/promises --external:node:child_process --outfile=\"./dist/@oazmi/superbuild-plugins.iife.min.js\""
 		}
 	},
 	"buildDist": {

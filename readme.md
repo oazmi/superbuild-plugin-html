@@ -1,3 +1,3 @@
-# @oazmi/superbuild-plugin-html
+# @oazmi/superbuild-plugins
 
-An html-bundling plugin for superbuild (which is a wrapper over esbuild) for building static sites with full code-splitting and code-sharing support.
+A suite of plugins for superbuild (which is a wrapper over esbuild) for static site generation with full code-splitting and code-sharing support.
