@@ -1,6 +1,6 @@
 /** @module */
 
-import type { HtmlDependency, HtmlDependencyArgs, HtmlDependencyCallback, HtmlDependencyFilter } from "../typedefs.ts"
+import type { HtmlDependency, HtmlDependencyArgs, HtmlDependencyCallback, HtmlDependencyFilter, NodeHandler } from "../typedefs.ts"
 import { HTML_NODE_TYPE } from "./../deps.ts"
 
 
@@ -18,3 +18,8 @@ export const scriptLinkHandlerCallback: HtmlDependencyCallback = (args: HtmlDepe
 const replaceContent: HtmlDependency["replaceContent"] = (node, output_path, config) => {
 	node.attributes["src"] = output_path
 }
+
+export default {
+	filter: scriptLinkHandlerFilter,
+	callback: scriptLinkHandlerCallback,
+} satisfies NodeHandler

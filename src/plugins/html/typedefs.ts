@@ -60,6 +60,12 @@ export interface HtmlDependencyArgs extends Pick<HtmlDependencyEmitData, "htmlDo
 	htmlNode: HtmlNode
 }
 
+/** describes a {@link NodeHandler}'s html-node filter,
+ * so that irrelevant html nodes can be ignored and never passed onto your {@link HtmlDependencyCallback} function.
+ *
+ * this is modeled closely to esbuild's `onResolve` and `onLoad` hook's filter system, since it is quite speedy,
+ * and reduces the logic inside of the callback function, while also keeping things more concise and clear.
+*/
 export interface HtmlDependencyFilter {
 	/** the node type to intercept. */
 	nodeType: HTML_NODE_TYPE
@@ -73,4 +79,12 @@ export interface HtmlDependencyFilter {
 	nodeAttribute?: string
 }
 
+/** the callback function of a {@link NodeHandler}, which gets called once its {@link NodeHandler.filter}
+ * lets through a certain input html-node ({@link HtmlDependencyArgs.htmlNode | `args.htmlNode`}) */
 export type HtmlDependencyCallback = (args: HtmlDependencyArgs) => MaybePromiseOrNull<StrictOmit<HtmlDependency, "key" | "htmlNode">>
+
+/** describes an html-node handler that will extract any present inlined/linked resource that might need to be bundled along with your html. */
+export interface NodeHandler {
+	filter: HtmlDependencyFilter
+	callback: HtmlDependencyCallback
+}

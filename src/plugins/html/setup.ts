@@ -1,16 +1,14 @@
-/** @module */
+/** the html plugin lets you bundle up html files, along side bundling any standard resource links that it might reference.
+ *
+ * @module
+*/
 
 import type { EsbuildPartialMessage, ImportedEntity, ImportEntity, OnEmitOptions, OnTransformOptions, Require, SuperPluginBuild, SuperPluginSetup } from "../../deps.ts"
-import { contentsToString, isNull, isRecord, promise_all } from "../../deps.ts"
+import { contentsToString, isNull, isRecord, promise_all, relativePath } from "../../deps.ts"
 import { htmlParse, htmlRender, htmlWalk, type HtmlNode } from "./deps.ts"
-import { scriptLinkHandlerCallback, scriptLinkHandlerFilter } from "./node_handlers/script_link.ts"
-import type { HtmlDependencyCallback, HtmlDependencyEmitData, HtmlDependencyFilter, HtmlNodeRef, HtmlNodeReplacementContentTask } from "./typedefs.ts"
+import { default as scriptLinkHandler } from "./node_handlers/script_link.ts"
+import type { HtmlDependencyEmitData, HtmlNodeRef, HtmlNodeReplacementContentTask, NodeHandler } from "./typedefs.ts"
 
-
-export interface NodeHandlers {
-	filter: HtmlDependencyFilter
-	callback: HtmlDependencyCallback
-}
 
 /** setup configuration options for the {@link htmlPluginSetup}.
  *
@@ -27,17 +25,18 @@ export interface HtmlPluginSetupConfig {
 	 *
 	 * @defaultValue all filters under [`./node_handlers/`](./node_handlers/) are included.
 	*/
-	nodeHandlers?: Array<NodeHandlers>
+	nodeHandlers?: Array<NodeHandler>
 }
 
 /** the default configuration for {@link htmlPluginSetup}. */
 export const defaultHtmlPluginSetupConfig: Required<HtmlPluginSetupConfig> = {
 	transformFilter: { filter: /.*/, loader: "html", namespace: undefined },
 	nodeHandlers: [
-		{ filter: scriptLinkHandlerFilter, callback: scriptLinkHandlerCallback },
+		scriptLinkHandler,
 	],
 }
 
+/** the html plugin lets you bundle up html files, along side bundling any standard resource links that it might reference. */
 export const htmlPluginSetup = (config?: HtmlPluginSetupConfig): SuperPluginSetup => {
 	return (build: SuperPluginBuild) => htmlPluginSetupBase(build, config)
 }
@@ -52,7 +51,9 @@ const htmlPluginSetupBase = (build: SuperPluginBuild, config?: HtmlPluginSetupCo
 			{ path: importer, namespace, resolveDir, pluginData } = args,
 			contents = contentsToString(args.contents),
 			html_doc: HtmlNode = htmlParse(contents),
-			html_imports: Array<ImportEntity<HtmlNodeRef>> = []
+			html_imports: Array<ImportEntity<HtmlNodeRef>> = [],
+			warnings: EsbuildPartialMessage[] = [],
+			errors: EsbuildPartialMessage[] = []
 
 		const
 			resource_reinsertion_list: HtmlDependencyEmitData["replacementTaskList"] = [],
@@ -83,7 +84,8 @@ const htmlPluginSetupBase = (build: SuperPluginBuild, config?: HtmlPluginSetupCo
 					})
 					// TODO: if the resolved path is an empty string/undefined, should we `continue` to the next hook?
 					// though, the result isn't going to change really if the next hook also extracts the same exact `path`...
-					// TODO: merge errors and warnings.
+					warnings.push(...resolved.warnings)
+					errors.push(...resolved.errors)
 					path = resolved.path
 					external = resolved.external
 				}
@@ -97,22 +99,26 @@ const htmlPluginSetupBase = (build: SuperPluginBuild, config?: HtmlPluginSetupCo
 			loader: "copy",
 			imports: html_imports,
 			emitData: emit_data,
+			warnings,
+			errors,
 		}
 	})
 
 	build.onEmit(emitFilter, async (args) => {
 		const
+			errors: EsbuildPartialMessage[] = [],
 			number_of_sources = args.inputs.length,
 			path = args.outputPath
 		if (number_of_sources !== 1) {
-			const error_text = `[htmlPlugin]: expected output html file to be constituted of just a single input html file, `
-				+ `but found it to be made out of "${number_of_sources}" source files.`
-				+ `input sources: [${args.inputs.map((input_file) => (input_file.namespace + ":" + input_file.path)).join("\n")}]`
-			return { errors: [{ text: error_text, location: { file: path } }] }
+			errors.push({
+				location: { file: path },
+				text: `[htmlPlugin]: expected output html file to be constituted of just a single input html file, `
+					+ `but found it to be made out of "${number_of_sources}" source files.`
+					+ `input sources: [${args.inputs.map((input_file) => (input_file.namespace + ":" + input_file.path)).join("\n")}]`
+			})
+			return { errors }
 		}
-		const
-			errors: EsbuildPartialMessage[] = [],
-			{ htmlDocument, replacementTaskList } = args.inputs[0].emitData as HtmlDependencyEmitData
+		const { htmlDocument, replacementTaskList } = args.inputs[0].emitData as HtmlDependencyEmitData
 
 		await promise_all(args.imports.map(async (imported_entity): Promise<void> => {
 			const
@@ -120,15 +126,18 @@ const htmlPluginSetupBase = (build: SuperPluginBuild, config?: HtmlPluginSetupCo
 				reinsertion_task = replacementTaskList.at(node_ref)
 			if (isNull(reinsertion_task)) {
 				errors.push({
-					text: `[htmlPlugin]: failed to find the "insertImport" function associated with the following html node number: "${node_ref}".`,
 					location: { file: path },
+					text: `[htmlPlugin]: failed to find the "insertImport" function associated with the following html node number: "${node_ref}".`,
 				})
 				return
 			}
 			const { htmlNode: node, replaceContent } = replacementTaskList[node_ref]
-			// TODO: resolve the `outputPath` as relative path if not external.
+			// now we resolve the `outputPath` as relative path if it is not an external path.
+			const referenced_path = external
+				? outputPath
+				: relativePath(path, outputPath)
 			// re-inserting the new link/reference back into the html node.
-			await replaceContent(node, outputPath, { external, write, with: with_attrs })
+			await replaceContent(node, referenced_path, { external, write, with: with_attrs })
 		}))
 
 		const rendered_html = await htmlRender(htmlDocument)
